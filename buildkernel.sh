@@ -9,6 +9,18 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
+# Detect the distribution type
+echo "Detecting distribution..."
+if [[ -f /etc/debian_version ]]; then
+  DISTRO="debian"
+elif [[ -f /etc/redhat-release ]]; then
+  DISTRO="fedora"
+else
+  echo "Unsupported distribution. This script supports Debian and Fedora-based systems." >&2
+  exit 1
+fi
+echo "Detected $DISTRO-based distribution."
+
 # Prompt the user for the kernel version
 read -rp "Enter the Linux kernel version you want to install (e.g., 6.6): " KERNEL_VERSION
 
@@ -18,8 +30,12 @@ NUM_CORES=$(nproc) # Automatically detect the number of processor cores
 
 # Install required dependencies
 echo "Installing required dependencies..."
-apt-get update -y
-apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev wget
+if [[ $DISTRO == "debian" ]]; then
+  apt-get update -y
+  apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev wget
+elif [[ $DISTRO == "fedora" ]]; then
+  dnf install -y gcc make ncurses-devel bison flex elfutils-libelf-devel openssl-devel wget
+fi
 
 # Download the kernel source
 echo "Downloading Linux kernel version ${KERNEL_VERSION}..."
@@ -51,8 +67,11 @@ make install
 
 # Update GRUB bootloader
 echo "Updating GRUB bootloader..."
-update-grub
+if [[ $DISTRO == "debian" ]]; then
+  update-grub
+elif [[ $DISTRO == "fedora" ]]; then
+  grub2-mkconfig -o /boot/grub2/grub.cfg
+fi
 
 # Inform the user about reboot
 echo "Kernel version ${KERNEL_VERSION} has been installed. Reboot to use the new kernel."
-
