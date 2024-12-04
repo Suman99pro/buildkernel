@@ -35,6 +35,7 @@ if [[ $DISTRO == "debian" ]]; then
   apt-get install -y build-essential libncurses-dev bison flex libssl-dev libelf-dev wget
 elif [[ $DISTRO == "fedora" ]]; then
   dnf install -y gcc make ncurses-devel bison flex elfutils-libelf-devel openssl-devel wget
+  dnf groupinstall -y "Development Tools"
 fi
 
 # Download the kernel source
