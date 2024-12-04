@@ -49,13 +49,20 @@ echo "Extracting kernel source..."
 tar -xf linux-${KERNEL_VERSION}.tar.xz
 cd linux-${KERNEL_VERSION}
 
+# Clean previous build files (if any)
+echo "Cleaning build environment..."
+make mrproper
+
 # Configure the kernel
 echo "Configuring the kernel..."
-make menuconfig # Change to make defconfig for default config (headless)
+make defconfig # Use default config; change to 'menuconfig' for interactive configuration
 
 # Compile the kernel
 echo "Compiling the kernel (this may take a while)..."
-make -j${NUM_CORES}
+make -j${NUM_CORES} V=1 > /usr/src/build_output.log 2>&1 || {
+  echo "Kernel compilation failed. Check /usr/src/build_output.log for details.";
+  exit 1;
+}
 
 # Install the kernel modules
 echo "Installing kernel modules..."
@@ -72,6 +79,11 @@ if [[ $DISTRO == "debian" ]]; then
 elif [[ $DISTRO == "fedora" ]]; then
   grub2-mkconfig -o /boot/grub2/grub.cfg
 fi
+
+# Ensure locale is set to prevent encoding issues
+echo "Setting locale to avoid encoding issues..."
+export LANG=C
+export LC_ALL=C
 
 # Inform the user about reboot
 echo "Kernel version ${KERNEL_VERSION} has been installed. Reboot to use the new kernel."
